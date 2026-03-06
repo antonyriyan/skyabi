@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WeatherApp</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #current-weather {
+      margin-bottom: 20px;
+    }
+    .forecast-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .forecast-card {
+      flex: 1 1 150px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      background: #f9f9f9;
+    }
+    .forecast-card img {
+      width: 50px;
+      height: 50px;
+    }
+  </style>
+</head>
+<body>
+  <h1>WeatherApp</h1>
+  <input type="text" id="city-input" placeholder="Enter city name">
+  <button id="search-btn">Search</button>
+
+  <div id="current-weather"></div>
+  <div class="forecast-container" id="forecast"></div>
+
+  <script>
+    function WeatherApp(apiKey) {
+      this.apiKey = apiKey;
+      this.baseUrl = "https://api.openweathermap.org/data/2.5/";
+    }
+
+    WeatherApp.prototype.getCurrentWeather = function(city) {
+      return fetch(`${this.baseUrl}weather?q=${city}&appid=${this.apiKey}&units=metric`)
+        .then(res => res.json());
+    };
+
+    WeatherApp.prototype.getForecast = function(city) {
+      return fetch(`${this.baseUrl}forecast?q=${city}&appid=${this.apiKey}&units=metric`)
+        .then(res => res.json());
+    };
+
+    WeatherApp.prototype.loadWeatherData = function(city) {
+      return Promise.all([
+        this.getCurrentWeather(city),
+        this.getForecast(city)
+      ]);
+    };
+
+    WeatherApp.prototype.renderCurrentWeather = function(data) {
+      const container = document.getElementById("current-weather");
+      container.innerHTML = `
+        <h2>Current Weather in ${data.name}</h2>
+        <p>Temperature: ${data.main.temp}°C</p>
+        <p>${data.weather[0].description}</p>
+        <img src="https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png" alt="icon">
+      `;
+    };
+
+    WeatherApp.prototype.renderForecast = function(data) {
+      const container = document.getElementById("forecast");
+      container.innerHTML = "";
+      // Forecast is every 3 hours; pick one per day (e.g., noon)
+      const daily = {};
+      data.list.forEach(item => {
+        const date = new Date(item.dt_txt);
+        const day = date.toLocaleDateString(undefined, { weekday: 'long' });
+        if (!daily[day] && date.getHours() === 12) {
+          daily[day] = item;
+        }
+      });
+      Object.keys(daily).slice(0,5).forEach(day => {
+        const item = daily[day];
+        const card = document.createElement("div");
+        card.className = "forecast-card";
+        card.innerHTML = `
+          <h3>${day}</h3>
+          <p>${item.main.temp}°C</p>
+          <p>${item.weather[0].description}</p>
+          <img src="https://openweathermap.org/img/wn/${item.weather[0].icon}@2x.png" alt="icon">
+        `;
+        container.appendChild(card);
+      });
+    };
+
+    // Initialize app
+    const app = new WeatherApp("YOUR_API_KEY_HERE");
+
+    document.getElementById("search-btn").addEventListener("click", function() {
+      const city = document.getElementById("city-input").value;
+      if (!city) return;
+      app.loadWeatherData(city).then(([current, forecast]) => {
+        app.renderCurrentWeather(current);
+        app.renderForecast(forecast);
+      });
+    });
+  </script>
+</body>
+</html>
