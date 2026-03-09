@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SkyFetch Weather Dashboard</title>
+  <style>
+    #recent-searches button {
+      margin: 5px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>SkyFetch Weather Dashboard</h1>
+  <input type="text" id="city-input" placeholder="Enter city name">
+  <button id="search-btn">Search</button>
+
+  <div id="weather-result"></div>
+  <h3>Recent Searches</h3>
+  <div id="recent-searches"></div>
+
+  <script>
+    // Dummy weather fetcher (replace with your real API call)
+    async function fetchWeather(city) {
+      document.getElementById("weather-result").textContent = 
+        `Fetching weather for ${city}...`;
+      // Example: call your weather API here
+      // let data = await fetch(`https://api.openweathermap.org/...&q=${city}`);
+      // process and display data
+      saveSearch(city);
+      renderSearches();
+    }
+
+    function saveSearch(city) {
+      let searches = JSON.parse(localStorage.getItem("recentSearches")) || [];
+      if (!searches.includes(city)) {
+        searches.push(city);
+        localStorage.setItem("recentSearches", JSON.stringify(searches));
+      }
+      localStorage.setItem("lastCity", city);
+    }
+
+    function renderSearches() {
+      let searches = JSON.parse(localStorage.getItem("recentSearches")) || [];
+      let container = document.getElementById("recent-searches");
+      container.innerHTML = "";
+      searches.forEach(city => {
+        let btn = document.createElement("button");
+        btn.textContent = city;
+        btn.onclick = () => fetchWeather(city);
+        container.appendChild(btn);
+      });
+    }
+
+    document.getElementById("search-btn").onclick = () => {
+      let city = document.getElementById("city-input").value.trim();
+      if (city) fetchWeather(city);
+    };
+
+    window.onload = () => {
+      let lastCity = localStorage.getItem("lastCity");
+      if (lastCity) fetchWeather(lastCity);
+      renderSearches();
+    };
+  </script>
+</body>
+</html>
